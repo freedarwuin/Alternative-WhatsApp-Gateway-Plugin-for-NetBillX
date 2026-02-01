@@ -395,9 +395,7 @@ class WGA
         // Prepare request data
         $data = [
             'phone' => $target . '@s.whatsapp.net',
-            'message' => $message,
-            "is_forwarded" => false,
-            "duration" => 3600
+            'message' => $message
         ];
 
         // Make API request
