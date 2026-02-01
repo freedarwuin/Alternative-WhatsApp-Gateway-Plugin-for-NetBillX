@@ -27,9 +27,10 @@
                                 <select class="form-control" id="alt_wga_device_id" name="alt_wga_device_id">
                                     <option value="">{Lang::T('-- Select Device --')}</option>
                                     {foreach $devices as $device}
-                                    <option value="{$device.device}" {if
-                                        $_c['alt_wga_device_id']==$device.device}selected{/if}>
-                                        {$device.device} {if $device.name}({$device.name}){/if}
+                                    {assign var="devId" value=$device.id|default:$device.device}
+                                    <option value="{$devId}" {if $_c['alt_wga_device_id']==$devId}selected{/if}>
+                                        {$devId} {if $device.display_name}({$device.display_name}){elseif
+                                        $device.name}({$device.name}){/if}
                                     </option>
                                     {/foreach}
                                 </select>
@@ -43,6 +44,25 @@
                                 <span class="help-block">{Lang::T('Enter Device ID manually or save Server URL first to
                                     load devices')}</span>
                                 {/if}
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-md-2 control-label">{Lang::T('Username')}</label>
+                            <div class="col-md-6">
+                                <input type="text" class="form-control" id="alt_wga_username" name="alt_wga_username"
+                                    value="{$_c['alt_wga_username']}" placeholder="admin">
+                                <span class="help-block">{Lang::T('Basic Auth username for WhatsApp API server
+                                    (optional)')}</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-md-2 control-label">{Lang::T('Password')}</label>
+                            <div class="col-md-6">
+                                <input type="password" class="form-control" id="alt_wga_password"
+                                    name="alt_wga_password" value="{$_c['alt_wga_password']}" placeholder="password"
+                                    onmouseleave="this.type = 'password'" onmouseenter="this.type = 'text'">
+                                <span class="help-block">{Lang::T('Basic Auth password for WhatsApp API server
+                                    (optional)')}</span>
                             </div>
                         </div>
                         <div class="form-group">
@@ -67,17 +87,46 @@
                     <h3 class="panel-title">{Lang::T('Device Management')}</h3>
                 </div>
                 <div class="panel-body">
-                    <!-- Login Options -->
-                    <div class="row">
+                    <!-- Active Device Display -->
+                    {if $_c['alt_wga_device_id']}
+                    <div class="alert alert-info">
+                        <i class="glyphicon glyphicon-phone"></i>
+                        <strong>{Lang::T('Active Device')}:</strong>
+                        <code id="wga-active-device-display">{$_c['alt_wga_device_id']}</code>
+                        <span class="pull-right">
+                            <button class="btn btn-success btn-xs" type="button" onclick="wgaShowQrLogin()">
+                                <i class="glyphicon glyphicon-qrcode"></i> {Lang::T('QR Login')}
+                            </button>
+                            <button class="btn btn-primary btn-xs" type="button" onclick="wgaShowCodeLogin()">
+                                <i class="glyphicon glyphicon-phone"></i> {Lang::T('Code Login')}
+                            </button>
+                        </span>
+                    </div>
+                    {else}
+                    <div class="alert alert-warning">
+                        <i class="glyphicon glyphicon-warning-sign"></i>
+                        {Lang::T('No active device selected. Create a device and set it as active.')}
+                    </div>
+                    {/if}
+
+                    <!-- Device Creation Section -->
+                    <div class="row" id="wga-device-setup">
                         <div class="col-md-12">
-                            <p>{Lang::T('Add / Link WhatsApp Device')}</p><br>
-                            <div class="btn-group" style="margin-bottom: 15px;">
-                                <button class="btn btn-success" type="button" onclick="wgaShowQrLogin()">
-                                    <i class="glyphicon glyphicon-qrcode"></i> {Lang::T('Login with QR Code')}
+                            <h4><i class="glyphicon glyphicon-plus-sign"></i> {Lang::T('Create New Device')}</h4>
+                            <div class="form-inline" style="margin-bottom: 15px;">
+                                <div class="form-group">
+                                    <input type="text" class="form-control" id="wga-new-device-id"
+                                        placeholder="{Lang::T('Device ID (optional - leave empty to auto-generate)')}"
+                                        style="width: 350px;">
+                                </div>
+                                <button class="btn btn-primary" type="button" onclick="wgaCreateDevice(event)">
+                                    <i class="glyphicon glyphicon-plus"></i> {Lang::T('Create Device')}
                                 </button>
-                                <button class="btn btn-primary" type="button" onclick="wgaShowCodeLogin()">
-                                    <i class="glyphicon glyphicon-phone"></i> {Lang::T('Login with Code')}
-                                </button>
+                            </div>
+                            <div id="wga-device-created" class="alert alert-success" style="display:none;">
+                                <i class="glyphicon glyphicon-ok-circle"></i>
+                                <strong>{Lang::T('Device Created!')}</strong>
+                                {Lang::T('Device ID')}: <code id="wga-created-device-id"></code>
                             </div>
                         </div>
                     </div>
@@ -103,29 +152,47 @@
                                         <th>{Lang::T('Name')}</th>
                                         <th>{Lang::T('Device ID')}</th>
                                         <th>{Lang::T('Status')}</th>
-                                        <th width="180">{Lang::T('Actions')}</th>
+                                        <th width="220">{Lang::T('Actions')}</th>
                                     </tr>
                                 </thead>
                                 <tbody id="wga-devices-tbody">
                                     {if $devices && count($devices) > 0}
                                     {foreach $devices as $device}
-                                    <tr id="wga-device-row-{$device.device}">
-                                        <td>{$device.name|default:$device.device}</td>
-                                        <td><small>{$device.device}</small></td>
+                                    {assign var="deviceId" value=$device.id|default:$device.device}
+                                    <tr id="wga-device-row-{$deviceId}">
+                                        <td>{$device.display_name|default:$device.name|default:$deviceId}</td>
+                                        <td><small>{$deviceId}</small></td>
                                         <td>
-                                            <span class="label label-success">
-                                                {$device.status|default:'connected'}
+                                            {assign var="deviceState"
+                                            value=$device.state|default:$device.status|default:'disconnected'}
+                                            <span
+                                                class="label {if $deviceState == 'connected' || $deviceState == 'online'}label-success{else}label-warning{/if}">
+                                                {$deviceState}
                                             </span>
                                         </td>
                                         <td>
-                                            <button class="btn btn-info btn-xs"
-                                                onclick="wgaReconnect('{$device.device}')"
+                                            {if $_c['alt_wga_device_id'] == $deviceId}
+                                            <span class="label label-primary">
+                                                <i class="glyphicon glyphicon-ok"></i> {Lang::T('Active')}
+                                            </span>
+                                            {else}
+                                            <button class="btn btn-success btn-xs"
+                                                onclick="wgaSetActiveDevice('{$deviceId}')"
+                                                title="{Lang::T('Set as Active')}">
+                                                <i class="glyphicon glyphicon-ok"></i> {Lang::T('Set Active')}
+                                            </button>
+                                            {/if}
+                                            <button class="btn btn-info btn-xs" onclick="wgaReconnect('{$deviceId}')"
                                                 title="{Lang::T('Reconnect')}">
                                                 <i class="glyphicon glyphicon-refresh"></i>
                                             </button>
-                                            <button class="btn btn-warning btn-xs"
-                                                onclick="wgaLogout('{$device.device}')" title="{Lang::T('Logout')}">
+                                            <button class="btn btn-warning btn-xs" onclick="wgaLogout('{$deviceId}')"
+                                                title="{Lang::T('Logout')}">
                                                 <i class="glyphicon glyphicon-log-out"></i>
+                                            </button>
+                                            <button class="btn btn-danger btn-xs"
+                                                onclick="wgaDeleteDevice('{$deviceId}')" title="{Lang::T('Delete')}">
+                                                <i class="glyphicon glyphicon-trash"></i>
                                             </button>
                                         </td>
                                     </tr>
@@ -133,8 +200,7 @@
                                     {else}
                                     <tr id="wga-no-devices-row">
                                         <td colspan="4" class="text-center text-muted">
-                                            {Lang::T('No devices found. Click "Login with QR Code" or "Login with Code"
-                                            to add a device.')}
+                                            {Lang::T('No devices found. Create a device first.')}
                                         </td>
                                     </tr>
                                     {/if}
@@ -284,12 +350,14 @@
 
             <h5><i class="glyphicon glyphicon-cloud"></i> <strong>Method 1: Docker (Recommended)</strong></h5>
             <pre style="background: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 5px; overflow-x: auto;">
-<span style="color: #75715e;"># Pull and run the Docker image</span>
- docker run --detach --publish=3000:3000 --name=whatsapp --restart=always --volume=$(docker volume create
---name=whatsapp):/app/storages aldinokemal2104/go-whatsapp-web-multidevice --autoreply="Dont't reply this message
-please"
-</pre>
-
+docker pull aldinokemal2104/go-whatsapp-web-multidevice
+docker run -d -p 3000:3000 \
+  -e APP_BASIC_AUTH=admin:admin \
+  -e APP_PORT=3000 \
+  -e APP_DEBUG=true \
+  -e APP_OS=Chrome \
+  -e APP_ACCOUNT_VALIDATION=false \
+  aldinokemal2104/go-whatsapp-web-multidevice:latest</pre>
             <h5><i class="glyphicon glyphicon-download-alt"></i> <strong>Method 2: Docker Compose</strong></h5>
             <p>Create a <code>docker-compose.yml</code> file:</p>
             <pre style="background: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 5px; overflow-x: auto;">
@@ -302,16 +370,17 @@ services:
       - "3000:3000"
     volumes:
       - whatsapp:/app/storages
-    command:
-      - --basic-auth=admin:admin
-      - --port=3000
-      - --debug=true
-      - --os=Chrome
-      - --account-validation=false
+    environment:
+      - APP_BASIC_AUTH=admin:admin
+      - APP_PORT=3000
+      - APP_DEBUG=true
+      - APP_OS=Chrome
+      - APP_ACCOUNT_VALIDATION=false
 
 volumes:
   whatsapp:
-</pre>
+            </pre>
+            <p>change APP_BASIC_AUTH: <code>admin:admin</code> to your username and password</p>
             <p>Then run: <code>docker-compose up -d</code></p>
 
             <h5><i class="glyphicon glyphicon-cog"></i> <strong>Method 3: Manual Installation (Go)</strong></h5>
@@ -383,10 +452,11 @@ go build -o whatsapp-server
 {include file="admin/footer.tpl"}
 
 <script>
-(function() {
-    var wgaBaseUrl = '{$_url}';
-    var wgaConnectionCheckInterval = null;
-    var wgaInitialDeviceCount = {if $devices}{$devices|@count}{else}0{/if};
+    document.addEventListener('DOMContentLoaded', function () {
+        var wgaBaseUrl = '{$_url}';
+        var wgaConnectionCheckInterval = null;
+        var wgaInitialDeviceCount = { if $devices }{ $devices| @count
+    }{ else}0{/if};
 
     // Helper functions
     function wgaGetEl(id) { return document.getElementById(id); }
@@ -396,7 +466,7 @@ go build -o whatsapp-server
     function wgaSetHtml(id, value) { var el = wgaGetEl(id); if (el) el.innerHTML = value; }
 
     // Copy API URL
-    window.wgaCopyApiUrl = function() {
+    window.wgaCopyApiUrl = function () {
         var copyText = wgaGetEl("wga-api-url");
         if (copyText) {
             copyText.select();
@@ -422,7 +492,7 @@ go build -o whatsapp-server
         }
     }
 
-    // Check if a new device has connected
+    // Check if device has connected (state change or new device)
     function wgaCheckConnection(modalType) {
         fetch(wgaBaseUrl + 'plugin/wga_getDevices')
             .then(function (response) { return response.json(); })
@@ -430,15 +500,40 @@ go build -o whatsapp-server
                 if (data.success && data.data && data.data.results) {
                     var devices = data.data.results;
                     var currentCount = devices.length;
-                    if (currentCount > wgaInitialDeviceCount) {
-                        wgaStopConnectionCheck();
+                    var connected = false;
+                    var connectedDeviceId = '';
+
+                    // Check if active device is now connected
+                    if (wgaActiveDeviceId) {
+                        for (var i = 0; i < devices.length; i++) {
+                            var dev = devices[i];
+                            var devId = dev.id || dev.device || '';
+                            var devState = dev.state || dev.status || '';
+                            if (devId === wgaActiveDeviceId && (devState === 'connected' || devState === 'online')) {
+                                connected = true;
+                                connectedDeviceId = devId;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Also check if a new device was added and is connected
+                    if (!connected && currentCount > wgaInitialDeviceCount) {
                         var newDevice = devices[devices.length - 1];
-                        var newDeviceId = newDevice.device || '';
-                        if (newDeviceId) {
+                        var newDeviceId = newDevice.id || newDevice.device || '';
+                        var newState = newDevice.state || newDevice.status || '';
+                        if (newDeviceId && (newState === 'connected' || newState === 'online')) {
+                            connected = true;
+                            connectedDeviceId = newDeviceId;
                             wgaSaveDeviceId(newDeviceId);
                         }
                         wgaInitialDeviceCount = currentCount;
+                    }
+
+                    if (connected) {
+                        wgaStopConnectionCheck();
                         wgaRenderDevicesTable(devices);
+                        console.log('Device connected:', connectedDeviceId);
                         if (modalType === 'qr') {
                             wgaSetDisplay('wga-qr-code-container', 'none');
                             wgaSetDisplay('wga-qr-connected', 'block');
@@ -464,28 +559,7 @@ go build -o whatsapp-server
             .then(function (response) { return response.json(); })
             .then(function (data) {
                 if (data.success) {
-                    var deviceIdEl = wgaGetEl('alt_wga_device_id');
-                    if (deviceIdEl) {
-                        if (deviceIdEl.tagName === 'SELECT') {
-                            var optionExists = false;
-                            for (var i = 0; i < deviceIdEl.options.length; i++) {
-                                if (deviceIdEl.options[i].value === deviceId) {
-                                    deviceIdEl.selectedIndex = i;
-                                    optionExists = true;
-                                    break;
-                                }
-                            }
-                            if (!optionExists) {
-                                var option = document.createElement('option');
-                                option.value = deviceId;
-                                option.text = deviceId;
-                                option.selected = true;
-                                deviceIdEl.appendChild(option);
-                            }
-                        } else {
-                            deviceIdEl.value = deviceId;
-                        }
-                    }
+                    wgaUpdateDeviceIdField(deviceId);
                     console.log('Device ID saved:', deviceId);
                 }
             })
@@ -494,8 +568,85 @@ go build -o whatsapp-server
             });
     }
 
+    // Update device ID field in the form
+    function wgaUpdateDeviceIdField(deviceId) {
+        var deviceIdEl = wgaGetEl('alt_wga_device_id');
+        if (deviceIdEl) {
+            if (deviceIdEl.tagName === 'SELECT') {
+                var optionExists = false;
+                for (var i = 0; i < deviceIdEl.options.length; i++) {
+                    if (deviceIdEl.options[i].value === deviceId) {
+                        deviceIdEl.selectedIndex = i;
+                        optionExists = true;
+                        break;
+                    }
+                }
+                if (!optionExists) {
+                    var option = document.createElement('option');
+                    option.value = deviceId;
+                    option.text = deviceId;
+                    option.selected = true;
+                    deviceIdEl.appendChild(option);
+                }
+            } else {
+                deviceIdEl.value = deviceId;
+            }
+        }
+    }
+
+    // Create a new device
+    window.wgaCreateDevice = function (e) {
+        var deviceIdInput = wgaGetEl('wga-new-device-id');
+        var deviceId = deviceIdInput ? deviceIdInput.value.trim() : '';
+
+        var formData = new FormData();
+        if (deviceId) {
+            formData.append('device_id', deviceId);
+        }
+
+        // Show loading state - find the button more reliably
+        var btn = e ? (e.target.closest ? e.target.closest('button') : e.target) : null;
+        var originalText = '';
+        if (btn) {
+            originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="glyphicon glyphicon-refresh glyphicon-spin"></i> Creating...';
+            btn.disabled = true;
+        }
+
+        fetch(wgaBaseUrl + 'plugin/wga_createDevice', { method: 'POST', body: formData })
+            .then(function (response) { return response.json(); })
+            .then(function (data) {
+                if (btn) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+                console.log('Create device response:', data);
+
+                if (data.success && data.device_id) {
+                    // Show success message
+                    wgaSetText('wga-created-device-id', data.device_id);
+                    wgaSetDisplay('wga-device-created', 'block');
+                    // Update the device ID field in settings
+                    wgaUpdateDeviceIdField(data.device_id);
+                    // Clear the input
+                    if (deviceIdInput) deviceIdInput.value = '';
+                    // Refresh devices list
+                    wgaRefreshDevices();
+                } else {
+                    alert('Error: ' + (data.message || 'Failed to create device'));
+                }
+            })
+            .catch(function (error) {
+                if (btn) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+                alert('Error: ' + error.message);
+            });
+    };
+
     // Show QR Code Login Modal
-    window.wgaShowQrLogin = function() {
+    window.wgaShowQrLogin = function () {
         wgaSetDisplay('wga-qr-loading', 'block');
         wgaSetDisplay('wga-qr-code-container', 'none');
         wgaSetDisplay('wga-qr-connected', 'none');
@@ -512,6 +663,10 @@ go build -o whatsapp-server
             .then(function (data) {
                 wgaSetDisplay('wga-qr-loading', 'none');
                 console.log('QR Code response:', data);
+                // Update device ID field if a new device was created
+                if (data.device_id) {
+                    wgaUpdateDeviceIdField(data.device_id);
+                }
                 // Only use proxied base64 image (avoid 403 from direct URL)
                 if (data.success && data.qr_image) {
                     var qrImg = wgaGetEl('wga-qr-code-image');
@@ -534,7 +689,7 @@ go build -o whatsapp-server
     }
 
     // Refresh QR Code
-    window.wgaRefreshQrCode = function() {
+    window.wgaRefreshQrCode = function () {
         wgaStopConnectionCheck();
         wgaSetDisplay('wga-qr-loading', 'block');
         wgaSetDisplay('wga-qr-code-container', 'none');
@@ -544,7 +699,7 @@ go build -o whatsapp-server
     };
 
     // Show Login with Code Modal
-    window.wgaShowCodeLogin = function() {
+    window.wgaShowCodeLogin = function () {
         wgaSetValue('wga-pairing-phone', '');
         wgaSetDisplay('wga-pairing-form', 'block');
         wgaSetDisplay('wga-pairing-loading', 'none');
@@ -556,7 +711,7 @@ go build -o whatsapp-server
     };
 
     // Get Pairing Code
-    window.wgaGetPairingCode = function() {
+    window.wgaGetPairingCode = function () {
         var phoneEl = wgaGetEl('wga-pairing-phone');
         var phone = phoneEl ? phoneEl.value.trim() : '';
         if (!phone) {
@@ -577,6 +732,10 @@ go build -o whatsapp-server
             .then(function (data) {
                 wgaSetDisplay('wga-pairing-loading', 'none');
                 console.log('Pairing code response:', data);
+                // Update device ID field if a new device was created
+                if (data.device_id) {
+                    wgaUpdateDeviceIdField(data.device_id);
+                }
                 var pairingCode = data.code || (data.data && data.data.results && data.data.results.code) ||
                     (data.data && data.data.results && data.data.results.pair_code) || (data.data && data.data.pair_code);
                 if (data.success && pairingCode) {
@@ -603,7 +762,7 @@ go build -o whatsapp-server
     };
 
     // Reconnect Device
-    window.wgaReconnect = function(deviceId) {
+    window.wgaReconnect = function (deviceId) {
         if (!deviceId) { alert('Device ID is required'); return; }
         if (!confirm('Reconnect device ' + deviceId + '?')) return;
         var formData = new FormData();
@@ -622,7 +781,7 @@ go build -o whatsapp-server
     };
 
     // Logout Device
-    window.wgaLogout = function(deviceId) {
+    window.wgaLogout = function (deviceId) {
         if (!deviceId) { alert('Device ID is required'); return; }
         if (!confirm('Are you sure you want to logout device ' + deviceId + '?')) return;
         var formData = new FormData();
@@ -640,8 +799,33 @@ go build -o whatsapp-server
             .catch(function (error) { alert('Error: ' + error.message); });
     };
 
+    // Delete Device (removes from API server)
+    window.wgaDeleteDevice = function (deviceId) {
+        if (!deviceId) { alert('Device ID is required'); return; }
+        if (!confirm('Are you sure you want to DELETE device ' + deviceId + '?\n\nThis will permanently remove the device from the server.')) return;
+        var formData = new FormData();
+        formData.append('device_id', deviceId);
+        fetch(wgaBaseUrl + 'plugin/wga_deleteDevice', { method: 'POST', body: formData })
+            .then(function (response) { return response.json(); })
+            .then(function (data) {
+                if (data.success) {
+                    alert('Device deleted successfully');
+                    // If deleted device was active, clear the active device display
+                    if (deviceId === wgaActiveDeviceId) {
+                        wgaActiveDeviceId = '';
+                        var displayEl = wgaGetEl('wga-active-device-display');
+                        if (displayEl) displayEl.textContent = '';
+                    }
+                    wgaRefreshDevices();
+                } else {
+                    alert('Error: ' + (data.message || 'Failed to delete device'));
+                }
+            })
+            .catch(function (error) { alert('Error: ' + error.message); });
+    };
+
     // Refresh Devices List
-    window.wgaRefreshDevices = function() {
+    window.wgaRefreshDevices = function () {
         fetch(wgaBaseUrl + 'plugin/wga_getDevices')
             .then(function (response) { return response.json(); })
             .then(function (data) {
@@ -655,37 +839,81 @@ go build -o whatsapp-server
     };
 
     // Render Devices Table
+    // Current active device ID
+    var wgaActiveDeviceId = '{$_c['alt_wga_device_id']|default:''}';
+
     function wgaRenderDevicesTable(devices) {
         var tbody = wgaGetEl('wga-devices-tbody');
         if (!tbody) return;
         if (!devices || devices.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No devices found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No devices found. Create a device first.</td></tr>';
             return;
         }
         var html = '';
         devices.forEach(function (device) {
-            var deviceId = device.device || '';
-            var status = device.status || 'connected';
+            var deviceId = device.id || device.device || '';
+            var deviceName = device.display_name || device.name || '-';
+            var status = device.state || device.status || 'disconnected';
             var statusClass = (status === 'connected' || status === 'online') ? 'label-success' : 'label-warning';
-            html += '<tr><td>' + (device.name || '-') + '</td><td><small>' + deviceId + '</small></td>' +
+
+            // Set Active button or Active label
+            var activeBtn = '';
+            if (deviceId === wgaActiveDeviceId) {
+                activeBtn = '<span class="label label-primary"><i class="glyphicon glyphicon-ok"></i> Active</span> ';
+            } else {
+                activeBtn = '<button class="btn btn-success btn-xs" onclick="wgaSetActiveDevice(\'' + deviceId + '\')" title="Set as Active">' +
+                    '<i class="glyphicon glyphicon-ok"></i> Set Active</button> ';
+            }
+
+            html += '<tr><td>' + deviceName + '</td><td><small>' + deviceId + '</small></td>' +
                 '<td><span class="label ' + statusClass + '">' + status + '</span></td><td>' +
+                activeBtn +
                 '<button class="btn btn-info btn-xs" onclick="wgaReconnect(\'' + deviceId + '\')" title="Reconnect">' +
                 '<i class="glyphicon glyphicon-refresh"></i></button> ' +
                 '<button class="btn btn-warning btn-xs" onclick="wgaLogout(\'' + deviceId + '\')" title="Logout">' +
-                '<i class="glyphicon glyphicon-log-out"></i></button></td></tr>';
+                '<i class="glyphicon glyphicon-log-out"></i></button> ' +
+                '<button class="btn btn-danger btn-xs" onclick="wgaDeleteDevice(\'' + deviceId + '\')" title="Delete">' +
+                '<i class="glyphicon glyphicon-trash"></i></button></td></tr>';
         });
         tbody.innerHTML = html;
     }
 
+    // Set active device
+    window.wgaSetActiveDevice = function (deviceId) {
+        if (!deviceId) { alert('Device ID is required'); return; }
+        var formData = new FormData();
+        formData.append('device_id', deviceId);
+        fetch(wgaBaseUrl + 'plugin/wga_setActiveDevice', { method: 'POST', body: formData })
+            .then(function (response) { return response.json(); })
+            .then(function (data) {
+                if (data.success) {
+                    wgaActiveDeviceId = deviceId;
+                    // Update active device display
+                    var displayEl = wgaGetEl('wga-active-device-display');
+                    if (displayEl) displayEl.textContent = deviceId;
+                    // Update the config form field
+                    wgaUpdateDeviceIdField(deviceId);
+                    // Refresh device list to update buttons
+                    wgaRefreshDevices();
+                    alert('Device set as active: ' + deviceId);
+                } else {
+                    alert('Error: ' + (data.message || 'Failed to set active device'));
+                }
+            })
+            .catch(function (error) { alert('Error: ' + error.message); });
+    };
+
     // Modal close event handlers (jQuery available now)
-    $('#wgaQrCodeModal').on('hidden.bs.modal', function () {
-        wgaStopConnectionCheck();
-        wgaRefreshDevices();
-    });
-    $('#wgaPairingModal').on('hidden.bs.modal', function () {
-        wgaStopConnectionCheck();
-        wgaRefreshDevices();
-    });
+    if (typeof $ !== 'undefined') {
+        $('#wgaQrCodeModal').on('hidden.bs.modal', function () {
+            wgaStopConnectionCheck();
+            wgaRefreshDevices();
+        });
+        $('#wgaPairingModal').on('hidden.bs.modal', function () {
+            wgaStopConnectionCheck();
+            wgaRefreshDevices();
+        });
+    }
 
     // Version info
     var versionEl = document.getElementById('version');
@@ -695,5 +923,5 @@ go build -o whatsapp-server
         var version = "{$version}";
         versionEl.innerHTML = productName + ' | Ver: ' + version + ' | by: <a href="' + authorLink + '">Focuslinks Tech</a>';
     }
-})();
+});
 </script>
