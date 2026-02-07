@@ -331,8 +331,7 @@
             </button>
         </span>
     </div>
-    <p class="text-muted"><small>Copy the API URL and paste it in SMS Server URL field in SMS
-            Settings.</small></p>
+    <p class="text-muted"><small>{Lang::T('Copy the API URL and paste it in SMS Server URL field in SMS Settings.')}</small></p>
     <p class="text-muted">If you update the API Token in <a href="{$_url}settings/app">Settings > General Settings > API
             Key </a> then you need to update the secret in whatsapp gateway Settings.</p>
 </div>
