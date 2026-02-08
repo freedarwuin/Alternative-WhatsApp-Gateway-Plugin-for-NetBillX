@@ -352,7 +352,7 @@
             <p>{Lang::T('This plugin requires')} <strong>go-whatsapp-web-multidevice</strong> {Lang::T('server. Choose one of the installation
                 methods below:')}</p>
 
-            <h5><i class="glyphicon glyphicon-cloud"></i> <strong>Method 1: Docker (Recommended)</strong></h5>
+            <h5><i class="glyphicon glyphicon-cloud"></i> <strong>{Lang::T('Method 1: Docker (Recommended)')}'</strong></h5>
             <pre style="background: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 5px; overflow-x: auto;">
 docker pull aldinokemal2104/go-whatsapp-web-multidevice
 docker run -d -p 3000:3000 \
