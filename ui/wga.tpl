@@ -349,8 +349,8 @@
     </div>
     <div id="wga-install-instructions" class="panel-collapse collapse">
         <div class="panel-body">
-            <p>This plugin requires <strong>go-whatsapp-web-multidevice</strong> server. Choose one of the installation
-                methods below:</p>
+            <p>{Lang::T('This plugin requires')} <strong>go-whatsapp-web-multidevice</strong> {Lang::T('server. Choose one of the installation
+                methods below:')}</p>
 
             <h5><i class="glyphicon glyphicon-cloud"></i> <strong>Method 1: Docker (Recommended)</strong></h5>
             <pre style="background: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 5px; overflow-x: auto;">
