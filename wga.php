@@ -102,7 +102,7 @@ function wga_config()
 {
     global $ui, $config;
     _admin();
-    $ui->assign('_title', 'Alternative WhatsApp Gateway Plugin');
+    $ui->assign('_title', Lang::T('Alternative WhatsApp Gateway Plugin'));
     $ui->assign('_system_menu', '');
     $admin = Admin::_info();
     $ui->assign('_admin', $admin);
