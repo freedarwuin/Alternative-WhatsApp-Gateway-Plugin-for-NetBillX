@@ -3,7 +3,7 @@
 /**
  * Bismillahir Rahmanir Raheem
  * 
- * PHP Mikrotik Billing (https://github.com/hotspotbilling/phpnuxbill/)
+ * PHP Mikrotik Billing (https://github.com/freedarwuin/NetBillX/)
  *
  * Alternative WhatsApp Plugin for PHP Mikrotik Billing
  *

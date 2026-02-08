@@ -1,6 +1,6 @@
-# Alternative WhatsApp Gateway Plugin for PHPNuxBill
+# Alternative WhatsApp Gateway Plugin for NetBillX
 
-A powerful WhatsApp messaging integration plugin for PHPNuxBill that enables automated customer notifications via WhatsApp. This plugin connects to the **go-whatsapp-web-multidevice** server, providing a self-hosted, cost-effective alternative to paid WhatsApp API services.
+A powerful WhatsApp messaging integration plugin for NetBillX that enables automated customer notifications via WhatsApp. This plugin connects to the **go-whatsapp-web-multidevice** server, providing a self-hosted, cost-effective alternative to paid WhatsApp API services.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Version](https://img.shields.io/badge/version-1.0.0-green.svg)
@@ -42,7 +42,7 @@ A powerful WhatsApp messaging integration plugin for PHPNuxBill that enables aut
 
 ### Message Sending
 - Send WhatsApp messages via REST API
-- Compatible with PHPNuxBill SMS notification system
+- Compatible with NetBillX SMS notification system
 - Support for customer notifications (invoices, reminders, etc.)
 - Secure API with secret key authentication
 
@@ -62,7 +62,7 @@ A powerful WhatsApp messaging integration plugin for PHPNuxBill that enables aut
 
 | Requirement | Version |
 |-------------|---------|
-| PHPNuxBill | Latest |
+| NetBillX | Latest |
 | PHP | 7.4+ |
 | PHP cURL Extension | Required |
 | go-whatsapp-web-multidevice | Latest |
@@ -74,7 +74,7 @@ A powerful WhatsApp messaging integration plugin for PHPNuxBill that enables aut
 
 1. **Download the plugin files**
 
-2. **Upload to PHPNuxBill**
+2. **Upload to NetBillX**
    ```
    /system/plugin/wga.php
    /system/plugin/ui/wga.tpl
@@ -157,7 +157,7 @@ go build -o whatsapp-server
    - Click "Login with QR Code" or "Login with Code"
    - Follow the on-screen instructions
 
-5. **Configure PHPNuxBill SMS Settings**
+5. **Configure NetBillX SMS Settings**
    - Copy the API URL from the plugin page
    - Paste it in `Settings > SMS/WhatsApp Settings > Server URL`
 
@@ -194,7 +194,7 @@ go build -o whatsapp-server
 
 ### Sending Messages
 
-Messages are sent automatically through PHPNuxBill's notification system once configured.
+Messages are sent automatically through NetBillX's notification system once configured.
 
 ## API Reference
 
@@ -254,7 +254,7 @@ These endpoints are used internally by the plugin:
 The plugin registers a cron hook that automatically reconnects the WhatsApp session to keep it alive.
 
 **How it works:**
-- Runs on every PHPNuxBill cron cycle
+- Runs on every NetBillX cron cycle
 - Only executes if Server URL and Device ID are configured
 - Sends reconnect request to maintain session
 - Logs success/failure to system logs
@@ -264,9 +264,9 @@ The plugin registers a cron hook that automatically reconnects the WhatsApp sess
 WGA Cron: Reconnect successful for device abc123
 ```
 
-**Ensure PHPNuxBill cron is running:**
+**Ensure NetBillX cron is running:**
 ```bash
-* * * * * php /path/to/phpnuxbill/cron.php
+* * * * * php /path/to/NetBillX/cron.php
 ```
 
 ## Troubleshooting
@@ -302,7 +302,7 @@ WGA Cron: Reconnect successful for device abc123
 
 ### Checking Logs
 
-**PHPNuxBill Logs:**
+**NetBillX Logs:**
 - Check `system/logs/` directory
 - Look for entries starting with `WGA`
 
